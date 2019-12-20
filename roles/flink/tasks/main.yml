@@ -1,0 +1,24 @@
+---
+- name: Mkdir flink
+  file:
+    path: /tmp/kubernetes/flink
+    state: directory
+
+- name: Copy manifest of flink
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/flink
+  loop:
+    - 10-namespace.yaml
+    - 20-flink-configmap.yml
+    - 30-jobmanager-deployment.yml
+    - 31-taskmanager-deployment.yml
+    - 40-jobmanager-service.yml
+    - 41-jobmanager-rest-service.yaml
+
+- name: Deploy flink session cluster
+  shell: |
+    kubectl apply -f flink/
+  args:
+    chdir: /tmp/kubernetes
+    warn: no

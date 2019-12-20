@@ -1,0 +1,28 @@
+---
+- name: Mkdir elastic
+  file:
+    path: /tmp/kubernetes/elastic
+    state: directory
+
+- name: Copy elastic manifest
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/elastic/
+  loop:
+    - "eck/all-in-one.yaml"
+    - "eck/elasticsearch.yaml"
+    - "eck/kibana.yaml"
+
+- name: Deploy elastic cluster
+  shell: |
+    kubectl apply -f elastic/
+  args:
+    chdir: /tmp/kubernetes/
+    warn: no
+
+- name: Retrieve and copy the elasticsearch and kibana password for the user elastic
+  shell: |
+    # 此处的 secret 根据部署的 elasticsearch 实例名生成，如果要修改ES集群名，此处的 serect 名同样需要修改
+    PASSWORD=$(kubectl get secret elasticsearch-sample-es-elastic-user -o=jsonpath='{.data.elastic}' | base64 --decode)
+    # elasticsearch 默认用户名是 elastic
+    echo ${PASSWORD} > /tmp/kubernetes/elastic.password

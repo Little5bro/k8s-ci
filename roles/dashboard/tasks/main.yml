@@ -1,0 +1,26 @@
+---
+# TODO 尚未配置DNS, 暴露k8s-master的8443端口以供外部访问
+- name: Copy dashboard configuration file
+  copy:
+    src: kubernetes-dashboard.yaml
+    dest: /tmp/kubernetes/
+
+- name: Create dashboard
+  shell: kubectl create -f kubernetes-dashboard.yaml
+  args:
+    chdir: /tmp/kubernetes/
+
+- name: Create dashboard serviceaccount
+  shell: |
+    kubectl create serviceaccount  dashboard-admin -n kube-system
+    kubectl create clusterrolebinding  dashboard-admin --clusterrole=cluster-admin --serviceaccount=kube-system:dashboard-admin
+
+- name: Get authentication token
+  shell: |
+    kubectl -n kube-system describe secret `kubectl -n kube-system get secret|grep admin-token|cut -d " " -f1`|grep "token:"|tr -s " "|cut -d " " -f2
+  register: auth_token
+
+- name: Copy authentication token to local directoty
+  shell: echo "{{ auth_token.stdout }}" > dashboard.token
+  args:
+    chdir: /tmp/kubernetes/

@@ -1,0 +1,26 @@
+---
+
+- name: Get kubeadm command when join in k8s cluster
+  shell: tail -n 2 /tmp/kubernetes/kubeadm_init.log
+  register: k8s_command
+  delegate_to: localhost
+
+- name: Join nodes to cluster
+  shell: "{{ k8s_command.stdout }}"
+
+- name: Copy admin.conf from master to nodes
+  copy:
+    src: /tmp/kubernetes/admin.conf
+    dest: /tmp/kubernetes/admin.conf
+    mode: "0644"
+
+- name: Mkdir .kube
+  file:
+    path: /root/.kube
+    state: directory
+
+- name: Copy admin.conf to .kube
+  copy:
+    src: /tmp/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes

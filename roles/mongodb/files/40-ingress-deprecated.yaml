@@ -1,0 +1,15 @@
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: mongodb
+  namespace: mongo
+spec:
+  rules:
+  - host: mongodb.machloop.com
+    http:
+      paths:
+      - path: '/'
+        backend:
+          serviceName: mongo
+          servicePort: 27017

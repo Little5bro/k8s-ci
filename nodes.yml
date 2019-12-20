@@ -1,0 +1,7 @@
+---
+- hosts: nodes
+  roles:
+    #- role: common
+    #  when: inventory_hostname not in groups['master']
+    - common
+    - nodes

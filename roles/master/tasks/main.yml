@@ -1,0 +1,36 @@
+---
+
+- name: Copy kubeadm.yaml
+  template:
+    src: kubeadm.yaml.j2
+    dest: /tmp/kubernetes/kubeadm.yaml
+
+- name: Init k8s cluster
+  shell: |
+    kubeadm init --config kubeadm.yaml > kubeadm_init.log
+  args:
+    chdir: /tmp/kubernetes/
+    warn: no
+
+- name: Get kubeadm_init.log
+  fetch:
+    src: /tmp/kubernetes/kubeadm_init.log
+    dest: /tmp/kubernetes/
+    flat: yes
+
+- name: Mkdir .kube
+  file:
+    path: /root/.kube
+    state: directory
+
+- name: Copy admin.conf to .kube
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+
+- name: Get admin.conf to local
+  fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: /tmp/kubernetes/
+    flat: yes

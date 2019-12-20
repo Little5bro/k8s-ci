@@ -1,0 +1,20 @@
+---
+- name: Crate cassandra-singlenode folder
+  file:
+    path: /tmp/kubernetes/cassandra-singlenode
+    state: directory
+
+- name: Copy cassandra-singlenode manifest
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/cassandra-singlenode/
+  loop:
+    - cassandra-service.yaml
+    - cassandra-statefulset.yaml
+
+- name: Deploy cassandra on kubernetes cluster
+  shell: |
+    kubectl apply -f cassandra-singlenode/
+  args:
+    chdir: /tmp/kubernetes/
+ 

@@ -1,0 +1,9 @@
+---
+
+- name: Copy calico configuration file
+  copy:
+    src: calico.yaml
+    dest: /tmp/kubernetes/
+
+- name: Deploy calico
+  shell: kubectl apply -f /tmp/kubernetes/calico.yaml

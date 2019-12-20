@@ -1,0 +1,39 @@
+---
+- name: Create Dir rook-ceph
+  file:
+    path: /tmp/kubernetes/rook-ceph
+    state: directory
+
+- name: Copy rook-ceph manifest
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/rook-ceph/
+  loop:
+    - common.yaml
+    - operator.yaml
+    - cluster-test.yaml
+    - storageclass-test.yaml
+    - dashboard-external-https.yaml
+    - dashboard-ingress-https.yaml
+
+- name: Create a rook-ceph cluster
+  shell: |
+    kubectl apply -f common.yaml
+    kubectl apply -f operator.yaml
+    kubectl apply -f cluster-test.yaml
+  args:
+    chdir: /tmp/kubernetes/rook-ceph/
+    warn: no
+
+- name: Apply rook-ceph storageclass and expose ceph service
+  shell: |
+    kubectl apply -f storageclass-test.yaml
+    kubectl apply -f dashboard-external-https.yaml
+    kubectl apply -f dashboard-ingress-https.yaml
+  args:
+    chdir: /tmp/kubernetes/rook-ceph/
+    warn: no
+
+- name: Set rook-ceph-block as default storageclass
+  shell: |
+    kubectl patch storageclass rook-ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class": "true"}}}'

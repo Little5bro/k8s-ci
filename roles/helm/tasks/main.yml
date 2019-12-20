@@ -1,0 +1,29 @@
+---
+# 在 k8s-master 安装 helm 包管理工具
+# 安装 helm 需要在宿主机上安装并配置 kubectl, k8s-master主机上已安装 kubectl
+
+# 直接使用 wget 下载 helm 安装包, 下载速度较慢
+# wget -O /tmp/kubernetes/helm-v2.14.3-linux-amd64.tar.gz https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz
+
+- name: Unarchive helm package
+  unarchive:
+    src: helm-v2.14.3-linux-amd64.tar.gz
+    dest: /tmp/kubernetes
+
+- name: Copy helm to sys path
+  copy:
+    src: /tmp/kubernetes/linux-amd64/helm
+    dest: /usr/local/bin/helm
+    mode: "0755"
+    remote_src: yes
+
+- name: Helm init
+  command: helm init --tiller-image jessestuart/tiller:v2.14.3 --service-account tiller --upgrade
+
+- name: Copy tiller to sys path
+  copy:
+    src: tiller.yml
+    dest: /tmp/kubernetes/tiller.yml
+
+- name: Create tiller role
+  command: kubectl apply -f /tmp/kubernetes/tiller.yml

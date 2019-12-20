@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.define "k8s-master" do |master|
+    master.vm.box="CentOS7-base"
+    master.vm.box_check_update = false
+    master.vm.hostname = "k8s-master"
+    master.vm.network "public_network", bridge: "em1", ip: "10.0.0.210"
+    master.vm.provider "virtualbox" do |vb|
+      vb.name = "k8s-master"
+      vb.cpus=2
+      vb.memory = "2048"
+    end
+
+    master.vm.provision "shell", inline: <<-SHELL
+      timedatectl set-timezone Asia/Shanghai
+      #yum install -y epel-release
+      yum install -y net-tools
+      sed -i '/PasswordAuthentication no/s/no/yes/g' /etc/ssh/sshd_config
+    SHELL
+  end
+
+  (1..3).each do |i|
+
+    ipnum = 210 + i
+    config.vm.define "k8s-node#{i}" do |node|
+    node.vm.box = "CentOS7-base"
+    node.vm.box_check_update = false
+    node.vm.hostname = "k8s-node#{i}"
+    node.vm.network "public_network", bridge: "em1", ip: "10.0.0.#{ipnum}"
+
+    node.vm.provider "virtualbox" do |vb|
+      vb.name = "k8s-node#{i}"
+      vb.cpus=2
+      vb.memory = "2048"
+    end
+
+    node.vm.provision "shell", inline: <<-SHELL
+      timedatectl set-timezone Asia/Shanghai
+      #yum install -y epel-release
+      yum install -y net-tools
+      # ssh login with passwd
+      sed -i '/PasswordAuthentication no/s/no/yes/g' /etc/ssh/sshd_config
+    SHELL
+
+    end
+  end
+end

@@ -1,0 +1,24 @@
+---
+# 使用 traefik 作为 ingress controller
+- name: Mkdir traefik in k8s-master
+  file:
+    path: /tmp/kubernetes/traefik
+    state: directory
+    mode: "0755"
+
+- name: Copy traefik files to k8s-master
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/traefik/
+    mode: "0644"
+  loop:
+    - 10-traefik-rbac.yml
+    - 20-traefik-daemonset.yml
+    - 30-traefik-service.yml
+    - 40-traefik-dashboard.yml
+
+- name: Deploy traefik in k8s-master
+  shell: |
+    kubectl apply -f traefik/
+  args:
+    chdir: /tmp/kubernetes

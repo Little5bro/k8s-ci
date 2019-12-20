@@ -1,0 +1,9 @@
+---
+
+- name: Copy flannel configuration file
+  copy:
+    src: kube-flannel.yml
+    dest: /tmp/kubernetes/
+
+- name: Deploy flannel
+  shell: kubectl apply -f /tmp/kubernetes/kube-flannel.yml

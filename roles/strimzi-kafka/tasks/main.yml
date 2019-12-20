@@ -1,0 +1,39 @@
+---
+- name: Mkdir strimzi-kafka
+  file:
+    path: /tmp/kubernetes/strimzi-kafka
+    state: directory
+
+- name: Copy strimzi-kafka manifest
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/strimzi-kafka/
+  loop:
+    - install
+    - my-cluster.yaml
+    - my-topic.yaml
+
+- name: Create strimizi kafka operator
+  shell: |
+    kubectl create ns kafka    # 创建 kafka operator namespace
+    # sed -i 's/namespace: .*/namespace: kafka/' install/cluster-operator/*RoleBinding*.yaml
+
+    # 此处创建的 namespace 若不是 my-kafka-project，要修改 install/cluster-operator/050-Deployment-strimzi-cluster-operator.yaml 文件中的STRIMZI_NAMESPACE参数值
+    kubectl create ns my-kafka-project   # 创建 kafka cluster namespace
+    
+    kubectl apply -f install/cluster-operator/ -n kafka
+
+    # 增加 operator 对 my-kafka-project namespace 的权限
+    kubectl apply -f install/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml -n my-kafka-project
+    kubectl apply -f install/cluster-operator/032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml -n my-kafka-project
+    kubectl apply -f install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml -n my-kafka-project
+
+    # 创建 kafka cluster, 可以根据需要修改 volume 大小
+    kubectl apply -f my-cluster.yaml -n my-kafka-project
+    # 等待 kafka cluster拉起
+    kubectl wait kafka/my-cluster --for=condition=Ready --timeout=600s -n my-kafka-project
+
+    # kafka cluster拉起之后，创建 kafka topic
+    kubectl apply -f my-topic.yaml -n my-kafka-project
+  args:
+    chdir: /tmp/kubernetes/strimzi-kafka/

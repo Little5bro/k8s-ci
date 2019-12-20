@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webshark
+  labels:
+    app: webshark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webshark
+  template:
+    metadata:
+      name: webshark
+      labels:
+        app: webshark
+    spec:
+      containers:
+      - name: webshark
+        image: registry.machloop.com/machloop/webshark
+        command: ["npm", "start"]
+        ports:
+          - name: web
+            containerPort: 8085
+        volumeMounts:
+          - name: webshark-data
+            mountPath: /captures
+      volumes:
+        - name: webshark-data
+          persistentVolumeClaim:
+            claimName: webshark-data
+      
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webshark-data
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webshark
+spec:
+  selector:
+    app: webshark
+  type: NodePort
+  ports:
+    - name: web
+      port: 8085
+      targetPort: 8085
+      nodePort: 30085

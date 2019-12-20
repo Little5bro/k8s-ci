@@ -1,0 +1,4 @@
+---
+- import_playbook: master.yml
+- import_playbook: nodes.yml
+- import_playbook: application.yml

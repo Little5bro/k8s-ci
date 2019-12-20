@@ -1,0 +1,12 @@
+---
+- name: Copy zeppelin manifest
+  copy:
+    src: zeppelin-server.yaml
+    dest: /tmp/kubernetes/
+
+- name: Deploy zeppelin server
+  shell: |
+    kubectl apply -f zeppelin-server.yaml
+  args:
+    chdir: /tmp/kubernetes/
+    warn: no

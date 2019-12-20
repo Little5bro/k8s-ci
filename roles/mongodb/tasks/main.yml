@@ -1,0 +1,22 @@
+---
+- name: Mkdir mongodb
+  file:
+    path: /tmp/kubernetes/mongodb
+    state: directory
+
+- name: Copy mongodb manifest
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/mongodb/
+  loop:
+    - 00-namespace.yaml
+    - 10-rbac.yaml
+    - 20-headless-service.yaml
+    - 30-statefulset.yaml
+
+- name: Deploy mongodb
+  shell: |
+    kubectl apply -f mongodb/
+  args:
+    chdir: /tmp/kubernetes/
+    warn: no

@@ -1,0 +1,33 @@
+---
+
+- name: Create a nfs-server instantiation
+  script: nfs-server.sh
+  args:
+    executable: bash
+
+- name: Mkdir nfs-client-provisioner in k8s-master
+  file:
+    path: /tmp/kubernetes/nfs-client-provisioner
+    state: directory
+    mode: "0755"
+
+- name: Copy nfs-client-provisioner configuration file
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/kubernetes/nfs-client-provisioner/
+    mode: "0644"
+  with_items:
+    - rbac.yml
+    - class.yml
+
+- name: Copy nfs-client-provisioner template
+  template:
+    src: deployment.yml.j2
+    dest: /tmp/kubernetes/nfs-client-provisioner/deployment.yml
+    mode: "0644"
+
+- name: Deploy traefik in k8s-master
+  shell: |
+    kubectl apply -f nfs-client-provisioner/
+  args:
+    chdir: /tmp/kubernetes

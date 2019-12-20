@@ -1,0 +1,12 @@
+---
+- name: Copy webshark manifest
+  copy:
+    src: webshark.yaml
+    dest: /tmp/kubernetes/
+
+- name: Deploy webshark on kubernetes cluster
+  shell: |
+    kubectl apply -f webshark.yaml
+  args:
+    chdir: /tmp/kubernetes/
+    warn: no

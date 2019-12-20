@@ -1,0 +1,17 @@
+---
+- name: Copy jupyter config.yaml
+  copy:
+    src: config.yaml
+    dest: /tmp/kubernetes/
+
+- name: Helm install jupyter notbook
+  shell: |
+    helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+    helm repo update
+    helm fetch --version=0.8.2 jupyterhub/jupyterhub
+    tar -xf jupyterhub-0.8.2.tgz
+    sed -i "s/gcr\.io/registry.aliyuncs.com/g" jupyterhub/values.yaml
+    helm install --name=jhub --namespace jhub --values config.yaml ./jupyterhub
+  args:
+    chdir: /tmp/kubernetes
+    warn: no

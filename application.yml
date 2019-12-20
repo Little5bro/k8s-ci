@@ -1,0 +1,10 @@
+---
+- hosts: master
+  roles:
+    #- flannel
+    - calico
+    - traefik
+    - dashboard
+    - helm
+    - nfs-client-provisioner
+    - rook-ceph

@@ -1,0 +1,150 @@
+---
+
+- fail:
+    massage: "Error: Only Support CentOS7."
+  when: ansible_facts.distribution != "CentOS" and ansible_facts.distribution_major_version != "7"
+
+- name: Create kubernetes deploy directory
+  file:
+    path: /tmp/kubernetes
+    state: directory
+
+- name: Create local kubernetes deploy directory
+  file:
+    path: /tmp/kubernetes
+    state: directory
+  delegate_to: localhost
+
+- name: Hostname setting
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Disable firewalld
+  service:
+    name: firewalld
+    state: stopped
+    enabled: no
+
+- name: Disable SElinux
+  selinux:
+    state: disabled
+
+# 如果不关闭 swap，可以配置 kubelet配置 KUBELET_EXTRA_ARGS=--fail-swap-on=false
+- name: Disable swap
+  shell: |
+    swapoff -a
+    sed -i 's/.*swap.*/#&/' /etc/fstab
+
+- name: Host configuration
+  template:
+    src: hosts.j2
+    dest: /etc/hosts
+
+- name: Copy k8s.conf
+  copy:
+    src: k8s.conf
+    dest: /etc/sysctl.d/k8s.conf
+    mode: '0644'
+
+- name: Update kernel parameters
+  shell: |
+    modprobe br_netfilter
+    sysctl -p /etc/sysctl.d/k8s.conf
+
+- name: Copy ipvs.modules
+  copy:
+    src: ipvs.modules
+    dest: /etc/sysconfig/modules/ipvs.modules
+    mode: '0644'
+
+- name: Modprobe ipvs modules
+  shell: |
+    chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules && lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+
+- name: Install packages
+  yum:
+    name: ['ipset', 'ipvsadm', 'wget']
+    state: present
+
+- name: Create centos yum repo backup folder
+  file:
+    path: /etc/yum.repos.d/bak
+    state: directory
+
+- name: Backup CentOS-Base.repo 
+  copy:
+    src: /etc/yum.repos.d/CentOS-Base.repo
+    dest: /etc/yum.repos.d/bak/CentOS-Base.repo
+    remote_src: yes
+
+- name: Remove CentOS-Base.repo
+  file:
+    path: /etc/yum.repos.d/CentOS-Base.repo
+    state: absent
+
+- name: Get centos7 base yum repo
+  get_url:
+    url: http://mirrors.cloud.tencent.com/repo/centos7_base.repo
+    dest: /etc/yum.repos.d/CentOS-Base.repo
+    mode: '0644'
+
+- name: Get epel yum repo
+  get_url:
+    url: http://mirrors.cloud.tencent.com/repo/epel-7.repo
+    dest: /etc/yum.repos.d/epel.repo
+    mode: '0644'
+
+- name: Clean yum cache
+  shell: |
+    yum clean all && yum makecache
+  args:
+    warn: false
+
+- name: Configure domestic kubernetes repo
+  yum_repository:
+    name: Kubernetes
+    description: Kubernetes YUM repo
+    file: kubernetes
+    baseurl: https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+    enabled: yes
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey:
+      - https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
+      - https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+
+- name: Configure docker repo
+  get_url:
+    url: https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    mode: '0644'
+
+- name: Install docker
+  yum:
+    name: docker-ce-18.09.7-3.el7
+    state: present
+
+- name: Copy daemon.json
+  copy:
+    src: daemon.json
+    dest: /etc/docker/
+    mode: '0644'
+
+- name: Start docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Install kubelet kubeadm kubectl
+  yum:
+    name: ['kubelet-1.15.4', 'kubeadm-1.15.4', 'kubectl-1.15.4']
+    state: present
+
+- name: Enable kubelet
+  service:
+    name: kubelet
+    enabled: yes
+
+- name: Pull external images
+  command: docker pull jessestuart/tiller:v2.14.3
