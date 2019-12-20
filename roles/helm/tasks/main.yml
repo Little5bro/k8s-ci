@@ -4,11 +4,12 @@
 
 # 直接使用 wget 下载 helm 安装包, 下载速度较慢
 # wget -O /tmp/kubernetes/helm-v2.14.3-linux-amd64.tar.gz https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz
-
-- name: Unarchive helm package
-  unarchive:
-    src: helm-v2.14.3-linux-amd64.tar.gz
-    dest: /tmp/kubernetes
+- name: Download helm from github
+  shell: |
+    wget  https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz
+    tar -xf helm-v2.14.3-linux-amd64.tar.gz
+  args:
+    chdir: /tmp/kubernetes/
 
 - name: Copy helm to sys path
   copy:
